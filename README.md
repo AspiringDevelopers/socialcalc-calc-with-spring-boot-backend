@@ -1,4 +1,4 @@
-# Aspiring Investments Spring Boot Backend
+# SocialCalc with Spring Boot Backend
 
 A modern Spring Boot implementation of the Aspiring Investments backend with comprehensive security, database integration, and REST API endpoints.
 
