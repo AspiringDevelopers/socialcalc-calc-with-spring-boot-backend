@@ -9,7 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
     "spring.datasource.password=",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "jwt.secret=test-only-jwt-secret-0123456789abcdef"
 })
 class AspiringInvestmentsApplicationTests {
 
