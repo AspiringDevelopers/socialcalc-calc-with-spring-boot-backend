@@ -2,6 +2,9 @@ package com.aspiringinvestments.backend;
 
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -31,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * register, login, save, list, get, and per-user isolation.
  */
 @Testcontainers
+@ExtendWith(OutputCaptureExtension.class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = "jwt.secret=test-only-jwt-secret-0123456789abcdef"
@@ -167,12 +171,19 @@ class FileApiIntegrationTests {
     void fileEndpointsRequireAToken() {
         assertThat(call(HttpMethod.GET, "/api/files/save", null, null).getStatusCode())
             .isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(call(HttpMethod.GET, "/api/files/save", "not-a-jwt", null).getStatusCode())
-            .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
-    void tokenSignedWithAnotherKeyIsRejected() {
+    void malformedTokenIsRejectedWith401(CapturedOutput output) {
+        ResponseEntity<Map<String, Object>> response = call(HttpMethod.GET, "/api/files/save", "not-a-jwt", null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).containsEntry("result", "fail");
+        assertThat(output).doesNotContain("threw exception").doesNotContain("\tat io.jsonwebtoken");
+    }
+
+    @Test
+    void tokenSignedWithAnotherKeyIsRejectedWith401(CapturedOutput output) {
         String forged = Jwts.builder()
             .subject(UUID.randomUUID().toString())
             .claim("email", "mallory@example.com")
@@ -181,7 +192,13 @@ class FileApiIntegrationTests {
             .signWith(Jwts.SIG.HS256.key().build())
             .compact();
 
-        assertThat(call(HttpMethod.GET, "/api/files/save", forged, null).getStatusCode())
-            .isEqualTo(HttpStatus.FORBIDDEN);
+        ResponseEntity<Map<String, Object>> response = call(HttpMethod.GET, "/api/files/save", forged, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).containsEntry("result", "fail");
+        assertThat(output)
+            .doesNotContain("threw exception")
+            .doesNotContain("SignatureException")
+            .doesNotContain("\tat io.jsonwebtoken");
     }
 }
