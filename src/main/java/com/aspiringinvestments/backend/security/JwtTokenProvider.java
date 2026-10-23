@@ -95,12 +95,11 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token);
             return true;
-        } catch (SecurityException | MalformedJwtException e) {
-            System.err.println("Invalid JWT signature: " + e.getMessage());
         } catch (ExpiredJwtException e) {
             System.err.println("Expired JWT token: " + e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            System.err.println("Unsupported JWT token: " + e.getMessage());
+        } catch (JwtException e) {
+            // Base class of all jjwt parsing errors, including io.jsonwebtoken.security.SignatureException
+            System.err.println("Invalid JWT: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             System.err.println("JWT token compact of handler are invalid: " + e.getMessage());
         }
