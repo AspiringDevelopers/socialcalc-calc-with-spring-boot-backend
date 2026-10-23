@@ -2,23 +2,57 @@ package com.aspiringinvestments.backend.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:11oETzKXQAGaYdkL5gEmGeJJFuYh7EQnp2XdTP1o/Vo=}")
+    private static final int MIN_SECRET_BYTES = 32; // HS256 needs a 256-bit key
+
+    @Value("${jwt.secret:}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
     private long jwtExpirationMs;
 
+    @Autowired
+    private Environment environment;
+
+    private SecretKey signingKey;
+
+    @PostConstruct
+    void initSigningKey() {
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            if (!environment.acceptsProfiles(Profiles.of("dev"))) {
+                throw new IllegalStateException(
+                    "JWT_SECRET is not set. Set the JWT_SECRET environment variable "
+                    + "(at least " + MIN_SECRET_BYTES + " bytes), or run with the 'dev' profile "
+                    + "to use a random per-process key.");
+            }
+            System.err.println("WARNING: JWT_SECRET not set; using a random key (dev profile). "
+                + "Tokens will not survive a restart.");
+            signingKey = Jwts.SIG.HS256.key().build();
+            return;
+        }
+        byte[] secretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                "JWT_SECRET must be at least " + MIN_SECRET_BYTES + " bytes, got " + secretBytes.length + ".");
+        }
+        signingKey = Keys.hmacShaKeyFor(secretBytes);
+    }
+
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return signingKey;
     }
 
     public String createToken(String userId, String email) {

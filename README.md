@@ -38,7 +38,8 @@ SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/aspiring_investments
 SPRING_DATASOURCE_USERNAME=postgres
 SPRING_DATASOURCE_PASSWORD=your_password
 
-# JWT
+# JWT (required: at least 32 bytes, e.g. `openssl rand -base64 48`;
+# the app refuses to start without it unless SPRING_PROFILES_ACTIVE=dev)
 JWT_SECRET=your-jwt-secret-key
 JWT_EXPIRATION=86400000
 
