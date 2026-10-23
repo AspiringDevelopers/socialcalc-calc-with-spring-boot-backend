@@ -31,7 +31,7 @@ public class FileController {
             List<FileData> files = fileService.listFiles(userId, "home/");
             
             List<Map<String, Object>> fileList = files.stream()
-                .map(file -> Map.of(
+                .<Map<String, Object>>map(file -> Map.of(
                     "fname", extractFileName(file.getPath()),
                     "createdAt", file.getCreatedAt(),
                     "updatedAt", file.getUpdatedAt()
